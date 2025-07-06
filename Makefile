@@ -1,6 +1,7 @@
 # Variables
 PROJECT_DIR := $(shell pwd)
 DOCKER_IMAGE := openevolve
+OPENAI_API_KEY := $(shell cat .env | grep OPENAI_API_KEY | cut -d '=' -f 2)
 
 # Default target
 .PHONY: help
@@ -63,3 +64,9 @@ docker-run:
 .PHONY: visualizer
 visualizer: check-uv
 	uv run python scripts/visualizer.py --path examples/
+
+test-example: check-uv
+	@echo "Installing example-specific dependencies..."
+	uv pip install -r examples/mlx_metal_kernel_opt/requirements.txt
+	@echo "Running MLX Metal Kernel Optimization example..."
+	OPENAI_API_KEY=$(OPENAI_API_KEY) uv run python openevolve-run.py examples/mlx_metal_kernel_opt/initial_program.py examples/mlx_metal_kernel_opt/evaluator.py --config examples/mlx_metal_kernel_opt/config.yaml --iterations 100

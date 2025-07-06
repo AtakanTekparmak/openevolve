@@ -56,3 +56,6 @@ problems
 
 # uv
 uv.lock
+
+# .env
+.env

@@ -1,7 +1,8 @@
 # Variables
 PROJECT_DIR := $(shell pwd)
 DOCKER_IMAGE := openevolve
-OPENAI_API_KEY := $(shell cat .env | grep OPENAI_API_KEY | cut -d '=' -f 2)
+# Try to read from .env file, fall back to environment variable
+OPENAI_API_KEY := $(shell if [ -f .env ]; then cat .env | grep OPENAI_API_KEY | cut -d '=' -f 2; else echo $$OPENAI_API_KEY; fi)
 
 # Default target
 .PHONY: help
@@ -68,5 +69,14 @@ visualizer: check-uv
 test-example: check-uv
 	@echo "Installing example-specific dependencies..."
 	uv pip install -r examples/mlx_metal_kernel_opt/requirements.txt
-	@echo "Running MLX Metal Kernel Optimization example..."
+	@echo "Checking OpenAI API key..."
+	@if [ -z "$(OPENAI_API_KEY)" ]; then \
+		echo "Error: OPENAI_API_KEY is not set!"; \
+		echo "Please set it by either:"; \
+		echo "1. Creating a .env file with: OPENAI_API_KEY=your_key_here"; \
+		echo "2. Exporting it: export OPENAI_API_KEY=your_key_here"; \
+		echo "3. Running with it: OPENAI_API_KEY=your_key make test-example"; \
+		exit 1; \
+	fi
+	@echo "Running MLX Metal Kernel Optimization example with OpenAI models..."
 	OPENAI_API_KEY=$(OPENAI_API_KEY) uv run python openevolve-run.py examples/mlx_metal_kernel_opt/initial_program.py examples/mlx_metal_kernel_opt/evaluator.py --config examples/mlx_metal_kernel_opt/config.yaml --iterations 100

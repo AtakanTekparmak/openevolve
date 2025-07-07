@@ -4,11 +4,11 @@ log_level: "INFO"
 
 # LLM configuration for Metal kernel optimization
 llm:
-  primary_model: "o3-2025-04-16"
+  primary_model: "google/gemini-2.5-flash"
   primary_model_weight: 0.6
-  secondary_model: "o3-2025-04-16"
+  secondary_model: "google/gemini-2.5-flash"
   secondary_model_weight: 0.4
-  api_base: "https://api.openai.com/v1"
+  api_base: "https://openrouter.ai/api/v1"
   temperature: 0.6
   top_p: 0.95
   max_tokens: 32000

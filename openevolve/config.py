@@ -2,12 +2,14 @@
 Configuration handling for OpenEvolve
 """
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import yaml
+from dotenv import load_dotenv
 
 
 @dataclass
@@ -347,16 +349,55 @@ class Config:
 
 def load_config(config_path: Optional[Union[str, Path]] = None) -> Config:
     """Load configuration from a YAML file or use defaults"""
+    # Load environment variables from .env file
+    load_dotenv()
+    
     if config_path and os.path.exists(config_path):
         config = Config.from_yaml(config_path)
     else:
         config = Config()
 
-        # Use environment variables if available
-        api_key = os.environ.get("OPENAI_API_KEY")
+    # Always check environment variables and apply them to override config file values
+    # Check for OpenRouter API key first, then fall back to OpenAI
+    openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
+    openai_api_key = os.environ.get("OPENAI_API_KEY")
+    
+    # Determine which API to use based on available keys and current config
+    api_key = None
+    api_base = None
+    
+    if openrouter_api_key:
+        # Use OpenRouter configuration
+        api_key = openrouter_api_key
+        api_base = os.environ.get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
+    elif openai_api_key:
+        # Use OpenAI configuration
+        api_key = openai_api_key
         api_base = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
+    elif config.llm.api_base and "openrouter.ai" in config.llm.api_base:
+        # Config specifies OpenRouter but no API key found
+        raise ValueError(
+            "Config specifies OpenRouter API (openrouter.ai) but no OPENROUTER_API_KEY found in environment or .env file. "
+            "Please set OPENROUTER_API_KEY or provide OPENAI_API_KEY as fallback."
+        )
+    else:
+        # No API key found, but might be okay if config has api_key set
+        logger = logging.getLogger(__name__)
+        if not config.llm.api_key:
+            logger.warning(
+                "No API key found in environment variables. "
+                "Make sure to set OPENAI_API_KEY or OPENROUTER_API_KEY in your environment or .env file, "
+                "or specify api_key directly in your config file."
+            )
 
-        config.llm.update_model_params({"api_key": api_key, "api_base": api_base})
+    # Apply environment variables to config (only if they were found)
+    if api_key or api_base:
+        env_params = {}
+        if api_key:
+            env_params["api_key"] = api_key
+        if api_base:
+            env_params["api_base"] = api_base
+        config.llm.update_model_params(env_params, overwrite=True)
 
     # Make the system message available to the individual models, in case it is not provided from the prompt sampler
     config.llm.update_model_params({"system_message": config.prompt.system_message})

@@ -59,7 +59,7 @@ docker-build:
 # Run the Docker container with the example
 .PHONY: docker-run
 docker-run:
-	docker run --rm -v $(PROJECT_DIR):/app --network="host" $(DOCKER_IMAGE) examples/function_minimization/initial_program.py examples/function_minimization/evaluator.py --config examples/function_minimization/config.yaml --iterations 1000
+	docker run --rm -v $(PROJECT_DIR):/app --network="host" $(DOCKER_IMAGE) examples/function_minimization/initial_program.py examples/function_minimization/evaluator.py --config examples/function_minimization/config.yaml --iterations 2
 
 # Run the visualization script
 .PHONY: visualizer
